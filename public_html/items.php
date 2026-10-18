@@ -16,6 +16,16 @@ $category = trim($_GET['category'] ?? '');
 $page    = 1;
 $perPage = 9;
 
+// 並び替えの選択肢
+$sortOptions = [
+    'new'        => 'created_at DESC',
+    'price_asc'  => 'price ASC',
+    'price_desc' => 'price DESC',
+];
+
+$sort    = $_GET['sort'] ?? 'new';
+$orderBy = $sortOptions[$sort] ?? $sortOptions['new'];
+
 // ---- ② WHERE句を動的に組み立てる（必ずプレースホルダを使うこと）------------
 $conditions = [];
 $params     = [];
@@ -45,7 +55,7 @@ $offset     = 0;
 $sql = "SELECT id, name, price, image, stock, category
         FROM items
         {$whereSql}
-        ORDER BY created_at DESC
+        ORDER BY {$orderBy}
         LIMIT {$perPage} OFFSET {$offset}";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -71,20 +81,29 @@ function buildQuery(array $overrides = []): string
     <header><a href="index.php">Tsuchi-to-Hi</a></header>
     <main>
         <h1>商品一覧</h1>
+        
+<form class="search-form" method="get" action="items.php">
+    <input type="text" name="keyword" placeholder="商品名で検索"
+           value="<?= htmlspecialchars($keyword) ?>">
 
-        <form class="search-form" method="get" action="items.php">
-            <input type="text" name="keyword" placeholder="商品名で検索"
-                   value="<?= htmlspecialchars($keyword) ?>">
-            <select name="category">
-                <option value="">すべてのカテゴリ</option>
-                <?php foreach ($categories as $c): ?>
-                    <option value="<?= htmlspecialchars($c) ?>" <?= $c === $category ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($c) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit">検索</button>
-        </form>
+    <select name="category">
+        <option value="">すべてのカテゴリ</option>
+        <?php foreach ($categories as $c): ?>
+            <option value="<?= htmlspecialchars($c) ?>" <?= $c === $category ? 'selected' : '' ?>>
+                <?= htmlspecialchars($c) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+
+    <select name="sort">
+        <option value="new" <?= $sort === 'new' ? 'selected' : '' ?>>新着順</option>
+        <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>価格が安い順</option>
+        <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>価格が高い順</option>
+    </select>
+
+    <button type="submit">検索</button>
+</form>
+
 
         <?php if (empty($items)): ?>
             <p class="empty-state">
